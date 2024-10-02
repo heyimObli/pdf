@@ -1,0 +1,552 @@
+
+Ex.No:1	Sorting Algorithms: Write a program that performs different sorting algorithms and
+determine the time taken for sorting with different values of n.
+
+AIM:
+To write a program to perform different sorting algorithms and to determine the time taken for sorting with different values of n. 
+
+PROGRAM:
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Function prototypes
+void bubbleSort(int arr[], int n);
+void quickSort(int arr[], int low, int high);
+void mergeSort(int arr[], int left, int right);
+void measureTime(void (*sortFunction)(int[], int), int arr[], int n, const char *algorithmName);
+
+// Utility function to swap elements
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// Bubble Sort
+void bubbleSort(int arr[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                swap(&arr[j], &arr[j + 1]);
+            }
+        }
+    }
+}
+
+// Quick Sort
+int partition(int arr[], int low, int high) {
+    int pivot = arr[high];
+    int i = (low - 1);
+    for (int j = low; j <= high - 1; j++) {
+        if (arr[j] < pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    return (i + 1);
+}
+
+void quickSort(int arr[], int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+// Merge Sort
+void merge(int arr[], int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+    
+    int *L = (int *)malloc(n1 * sizeof(int));
+    int *R = (int *)malloc(n2 * sizeof(int));
+
+    for (int i = 0; i < n1; i++)
+        L[i] = arr[left + i];
+    for (int i = 0; i < n2; i++)
+        R[i] = arr[mid + 1 + i];
+
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k++] = L[i++];
+        } else {
+            arr[k++] = R[j++];
+        }
+    }
+
+    while (i < n1) {
+        arr[k++] = L[i++];
+    }
+    while (j < n2) {
+        arr[k++] = R[j++];
+    }
+
+    free(L);
+    free(R);
+}
+
+void mergeSort(int arr[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+
+// Function to measure the time taken by a sorting algorithm
+void measureTime(void (*sortFunction)(int[], int), int arr[], int n, const char *algorithmName) {
+    int *arrCopy = (int *)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        arrCopy[i] = arr[i];
+    }
+
+    clock_t start = clock();
+    sortFunction(arrCopy, n);
+    clock_t end = clock();
+    double timeTaken = (double)(end - start) / CLOCKS_PER_SEC;
+
+    printf("%s took %f seconds.\n", algorithmName, timeTaken);
+
+    free(arrCopy);
+}
+
+// Function to generate a random array
+void generateRandomArray(int arr[], int n) {
+    for (int i = 0; i < n; i++) {
+        arr[i] = rand() % 10000;
+    }
+}
+
+int main() {
+    srand(time(NULL));
+
+    int sizes[] = {1000, 2000, 3000, 4000, 5000}; // Different sizes of arrays to test
+    int numSizes = sizeof(sizes) / sizeof(sizes[0]);
+
+    for (int i = 0; i < numSizes; i++) {
+        int size = sizes[i];
+        int *arr = (int *)malloc(size * sizeof(int));
+        generateRandomArray(arr, size);
+
+        printf("Testing with array size: %d\n", size);
+
+        measureTime(bubbleSort, arr, size, "Bubble Sort");
+        measureTime([](int arr[], int n) { quickSort(arr, 0, n - 1); }, arr, size, "Quick Sort");
+        measureTime([](int arr[], int n) { mergeSort(arr, 0, n - 1); }, arr, size, "Merge Sort");
+
+        free(arr);
+        printf("\n");
+    }
+
+    return 0;
+}
+
+Output:
+ 
+
+
+
+
+Ex.No:2	Knuth-Morris-Pratt: Implement Knuth-Morris-Pratt (KMP) string searching algorithm
+
+AIM:
+To write programs to simulate KMP string searching algorithm.
+
+PROGRAM:
+#include <stdio.h>
+#include <string.h>
+
+// Function to create the LPS (Longest Prefix Suffix) array
+void computeLPSArray(const char *pattern, int *lps) {
+    int length = strlen(pattern);
+    int lengthLPS = 0; // Length of the previous longest prefix suffix
+    lps[0] = 0; // LPS[0] is always 0
+
+    int i = 1;
+    while (i < length) {
+        if (pattern[i] == pattern[lengthLPS]) {
+            lengthLPS++;
+            lps[i] = lengthLPS;
+            i++;
+        } else {
+            if (lengthLPS != 0) {
+                lengthLPS = lps[lengthLPS - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+}
+
+// KMP Search Function
+void KMPSearch(const char *text, const char *pattern) {
+    int m = strlen(pattern);
+    int n = strlen(text);
+
+    int lps[m]; // Longest Prefix Suffix array
+
+    // Compute LPS array
+    computeLPSArray(pattern, lps);
+
+    int i = 0; // index for text[]
+    int j = 0; // index for pattern[]
+
+    while (i < n) {
+        if (pattern[j] == text[i]) {
+            i++;
+            j++;
+        }
+
+        if (j == m) {
+            printf("Pattern found at index %d\n", i - j);
+            j = lps[j - 1];
+        } else if (i < n && pattern[j] != text[i]) {
+            if (j != 0) {
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+}
+
+int main() {
+    char text[] = "ABABDABACDABABCABAB";
+    char pattern[] = "ABABCABAB";
+
+    KMPSearch(text, pattern);
+
+    return 0;
+}
+
+Output:
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ex.No:3	Topological ordering: Obtain the Topological ordering of vertices in a given digraph
+AIM:
+To write a program for implementation of topological ordering with given digraph.
+
+PROGRAM:
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX 100
+
+// Queue structure
+typedef struct {
+    int front, rear;
+    int items[MAX];
+} Queue;
+
+void initQueue(Queue* q) {
+    q->front = 0;
+    q->rear = -1;
+}
+
+int isEmpty(Queue* q) {
+    return q->rear < q->front;
+}
+
+void enqueue(Queue* q, int item) {
+    if (q->rear == MAX - 1) {
+        printf("Queue is full\n");
+        return;
+    }
+    q->items[++(q->rear)] = item;
+}
+
+int dequeue(Queue* q) {
+    if (isEmpty(q)) {
+        printf("Queue is empty\n");
+        return -1;
+    }
+    return q->items[(q->front)++];
+}
+
+int peek(Queue* q) {
+    if (isEmpty(q)) {
+        printf("Queue is empty\n");
+        return -1;
+    }
+    return q->items[q->front];
+}
+
+// Function to perform topological sort using Kahn's Algorithm
+void topologicalSort(int vertices, int adjMatrix[vertices][vertices]) {
+    int inDegree[vertices];
+    Queue q;
+    initQueue(&q);
+    
+    // Initialize in-degrees of all vertices
+    for (int i = 0; i < vertices; i++) {
+        inDegree[i] = 0;
+    }
+    
+    // Compute in-degrees
+    for (int i = 0; i < vertices; i++) {
+        for (int j = 0; j < vertices; j++) {
+            if (adjMatrix[j][i] == 1) {
+                inDegree[i]++;
+            }
+        }
+    }
+    
+    // Enqueue vertices with 0 in-degree
+    for (int i = 0; i < vertices; i++) {
+        if (inDegree[i] == 0) {
+            enqueue(&q, i);
+        }
+    }
+    
+    int count = 0;
+    printf("Topological Order:\n");
+    while (!isEmpty(&q)) {
+        int u = dequeue(&q);
+        printf("%d ", u);
+        count++;
+        
+        // Decrease in-degree of all adjacent vertices
+        for (int i = 0; i < vertices; i++) {
+            if (adjMatrix[u][i] == 1) {
+                if (--inDegree[i] == 0) {
+                    enqueue(&q, i);
+                }
+            }
+        }
+    }
+    
+    // Check if there was a cycle
+    if (count != vertices) {
+        printf("\nThe graph has a cycle\n");
+    } else {
+        printf("\nTopological sorting completed\n");
+    }
+}
+
+int main() {
+    int vertices = 6;
+    int adjMatrix[6][6] = {
+        {0, 1, 1, 0, 0, 0},
+        {0, 0, 0, 1, 1, 0},
+        {0, 0, 0, 0, 1, 0},
+        {0, 0, 0, 0, 0, 1},
+        {0, 0, 0, 0, 0, 1},
+        {0, 0, 0, 0, 0, 0}
+    };
+
+    topologicalSort(vertices, adjMatrix);
+
+    return 0;
+}
+
+Output:
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ex.No:4.	Knapsack Algorithm: Implement 0/1 Knapsack problem using Dynamic Programming
+
+AIM:
+To write a program for implementation of knapsack algorithm for 0/1 knapsack problem.
+
+PROGRAM:
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// Function to solve the 0/1 Knapsack Problem
+int knapsack(int capacity, int weights[], int values[], int n) {
+    int i, w;
+    int **dp = (int **)malloc((n + 1) * sizeof(int *));
+    for (i = 0; i <= n; i++) {
+        dp[i] = (int *)malloc((capacity + 1) * sizeof(int));
+    }
+
+    // Initialize the dp array
+    for (i = 0; i <= n; i++) {
+        for (w = 0; w <= capacity; w++) {
+            if (i == 0 || w == 0) {
+                dp[i][w] = 0;
+            } else if (weights[i - 1] <= w) {
+                dp[i][w] = (values[i - 1] + dp[i - 1][w - weights[i - 1]] > dp[i - 1][w]) ?
+                            values[i - 1] + dp[i - 1][w - weights[i - 1]] :
+                            dp[i - 1][w];
+            } else {
+                dp[i][w] = dp[i - 1][w];
+            }
+        }
+    }
+
+    int result = dp[n][capacity];
+    
+    // Free allocated memory
+    for (i = 0; i <= n; i++) {
+        free(dp[i]);
+    }
+    free(dp);
+
+    return result;
+}
+
+int main() {
+    int capacity = 50; // Maximum weight capacity of the knapsack
+    int values[] = {60, 100, 120}; // Values of the items
+    int weights[] = {10, 20, 30};   // Weights of the items
+    int n = sizeof(values) / sizeof(values[0]); // Number of items
+
+    int maxValue = knapsack(capacity, weights, values, n);
+    printf("Maximum value in knapsack = %d\n", maxValue);
+
+    return 0;
+}
+
+
+Output:
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ex.No:5	Dijikstra’s Algorithm
+
+AIM:
+To write a  program for implementation of Dijikstra’s algorithms.
+
+PROGRAM:
+
+#include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+
+#define V 9 // Number of vertices in the graph
+#define INF INT_MAX // Define infinity
+
+// Function to find the vertex with the minimum distance
+int minDistance(int dist[], bool sptSet[]) {
+    int min = INF, min_index;
+    for (int v = 0; v < V; v++) {
+        if (!sptSet[v] && dist[v] <= min) {
+            min = dist[v];
+            min_index = v;
+        }
+    }
+    return min_index;
+}
+
+// Function to implement Dijkstra's Algorithm
+void dijkstra(int graph[V][V], int src) {
+    int dist[V]; // The output array dist[i] holds the shortest distance from src to i
+    bool sptSet[V]; // sptSet[i] will be true if vertex i is included in the shortest path tree
+
+    // Initialize all distances as INFINITE and sptSet[] as false
+    for (int i = 0; i < V; i++) {
+        dist[i] = INF;
+        sptSet[i] = false;
+    }
+    // Distance from the source vertex to itself is always 0
+    dist[src] = 0;
+
+    // Find shortest path for all vertices
+    for (int count = 0; count < V - 1; count++) {
+        // Pick the minimum distance vertex from the set of vertices not yet processed
+        int u = minDistance(dist, sptSet);
+        sptSet[u] = true;
+
+        // Update dist[] values of the adjacent vertices of the picked vertex
+        for (int v = 0; v < V; v++) {
+            // Update dist[v] if and only if it is not in sptSet, there is an edge from u to v,
+            // and the total weight of path from source to v through u is smaller than the current value of dist[v]
+            if (!sptSet[v] && graph[u][v] && dist[u] != INF && dist[u] + graph[u][v] < dist[v]) {
+                dist[v] = dist[u] + graph[u][v];
+            }
+        }
+    }
+
+    // Print the constructed distance array
+    printf("Vertex \t Distance from Source\n");
+    for (int i = 0; i < V; i++) {
+        printf("%d \t %d\n", i, dist[i]);
+    }
+}
+
+int main() {
+    // Adjacency matrix representation of the graph
+    int graph[V][V] = {
+        {0, 4, 0, 0, 0, 0, 0, 8, 0},
+        {4, 0, 8, 0, 0, 0, 0, 11, 0},
+        {0, 8, 0, 7, 0, 4, 0, 0, 2},
+        {0, 0, 7, 0, 9, 14, 0, 0, 0},
+        {0, 0, 0, 9, 0, 10, 0, 0, 0},
+        {0, 0, 4, 14, 10, 0, 2, 0, 0},
+        {0, 0, 0, 0, 0, 2, 0, 1, 6},
+        {8, 11, 0, 0, 0, 0, 1, 0, 7},
+        {0, 0, 2, 0, 0, 0, 6, 7, 0}
+    };
+
+    int src = 0; // Starting vertex for Dijkstra's Algorithm
+
+    dijkstra(graph, src);
+
+    return 0; }
